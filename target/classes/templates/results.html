@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title th:text="'Results — ' + ${result.fileName}">Results</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+
+<div class="page-wrap">
+
+    <header class="site-header">
+        <div class="header-inner">
+            <span class="header-badge">IT Dept</span>
+            <h1>Week 07 Assignment Tester</h1>
+            <p class="header-sub">ArrayList, Mean &amp; Median — Java 25</p>
+        </div>
+    </header>
+
+    <main class="main-content">
+
+        <!-- ── Summary bar ──────────────────────────────────────────────────── -->
+        <div class="summary-bar" th:classappend="${result.overallPassed} ? 'summary-pass' : 'summary-fail'">
+            <div class="summary-left">
+                <span class="summary-icon" th:text="${result.overallPassed} ? '&#9989;' : '&#10060;'"></span>
+                <div>
+                    <div class="summary-title" th:text="${result.fileName}"></div>
+                    <div class="summary-sub">
+                        Input size: <strong th:text="${result.inputSize}"></strong>
+                        random integers
+                    </div>
+                </div>
+            </div>
+            <div class="summary-counts">
+                <div class="count-pill pill-pass"   th:text="${result.passedCount}  + ' passed'"></div>
+                <div class="count-pill pill-warn"   th:if="${result.warningCount > 0}"
+                     th:text="${result.warningCount} + ' warning'"></div>
+                <div class="count-pill pill-fail"   th:if="${result.failedCount  > 0}"
+                     th:text="${result.failedCount}  + ' failed'"></div>
+                <div class="count-pill pill-total"  th:text="${result.totalCount}   + ' total'"></div>
+            </div>
+        </div>
+
+        <!-- ── Check categories ─────────────────────────────────────────────── -->
+        <div th:each="category : ${result.categories}"
+             th:with="catChecks=${result.getChecksForCategory(category)}">
+
+            <div th:if="${!#lists.isEmpty(catChecks)}">
+
+                <h2 class="section-title" th:text="${category.label}"></h2>
+
+                <div class="check-table">
+                    <div class="check-row check-header">
+                        <div class="col-status">Status</div>
+                        <div class="col-name">Check</div>
+                        <div class="col-details">Details</div>
+                    </div>
+
+                    <div th:each="check : ${catChecks}"
+                         class="check-row"
+                         th:classappend="${check.status.name().toLowerCase()}">
+
+                        <div class="col-status">
+                            <span th:switch="${check.status.name()}">
+                                <span th:case="'PASS'" class="badge badge-pass">PASS</span>
+                                <span th:case="'FAIL'" class="badge badge-fail">FAIL</span>
+                                <span th:case="'WARN'" class="badge badge-warn">WARN</span>
+                            </span>
+                        </div>
+
+                        <div class="col-name"    th:text="${check.checkName}"></div>
+                        <div class="col-details" th:text="${check.details}"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ── Raw output sections ──────────────────────────────────────────── -->
+        <h2 class="section-title">Raw Output</h2>
+
+        <!-- Program stdout -->
+        <details class="output-details" open th:if="${!#strings.isEmpty(result.programOutput)}">
+            <summary class="output-summary">&#128203; Program stdout</summary>
+            <pre class="output-pre" th:text="${result.programOutput}"></pre>
+        </details>
+
+        <!-- Program stderr — covers both compile errors and runtime exceptions -->
+        <details class="output-details" open th:if="${!#strings.isEmpty(result.programStderr)}">
+            <summary class="output-summary">&#10060; Errors (compile or runtime)</summary>
+            <pre class="output-pre error-pre" th:text="${result.programStderr}"></pre>
+        </details>
+
+        <!-- Source code viewer -->
+        <details class="output-details">
+            <summary class="output-summary">&#128196; Submitted source code</summary>
+            <pre class="output-pre source-pre" th:text="${source}"></pre>
+        </details>
+
+        <!-- ── Actions ──────────────────────────────────────────────────────── -->
+        <div class="actions-row">
+            <a href="/" class="btn-back">&#8592; Test another submission</a>
+        </div>
+
+    </main>
+
+    <footer class="site-footer">
+        Week 07 Assignment Tester &nbsp;&middot;&nbsp; Java 25 &nbsp;&middot;&nbsp; Spring Boot 4.0.2
+    </footer>
+
+</div>
+</body>
+</html>

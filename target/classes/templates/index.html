@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Week 07 Assignment Tester</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+
+<div class="page-wrap">
+
+    <header class="site-header">
+        <div class="header-inner">
+            <span class="header-badge">IT Dept</span>
+            <h1>Week 07 Assignment Tester</h1>
+            <p class="header-sub">ArrayList, Mean &amp; Median — Java 25</p>
+        </div>
+    </header>
+
+    <main class="main-content">
+
+        <!-- flash error -->
+        <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+        <div class="card upload-card">
+            <h2 class="card-title">Upload Student Submission</h2>
+            <p class="card-desc">
+                Upload a student's <code>.java</code> file.  The tester will compile it,
+                run it with a controlled input, analyse the source code structure,
+                and verify the output — without sending any student work to an
+                external service.
+            </p>
+
+            <form action="/evaluate" method="post" enctype="multipart/form-data" class="upload-form">
+
+                <div class="form-row">
+                    <label for="file" class="form-label">Student <code>.java</code> file</label>
+                    <div class="file-drop-zone" id="dropZone">
+                        <input type="file" id="file" name="file" accept=".java" required class="file-input"/>
+                        <div class="file-drop-label">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"
+                                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            <span id="fileLabel">Click to choose or drag a .java file here</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row form-row-inline">
+                    <label for="inputSize" class="form-label">
+                        Number of random integers to generate
+                        <span class="form-hint">(sent as stdin — between 1 and 1000)</span>
+                    </label>
+                    <input type="number" id="inputSize" name="inputSize"
+                           value="10" min="1" max="1000" required class="number-input"/>
+                </div>
+
+                <button type="submit" class="btn-submit">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                         viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3"/>
+                    </svg>
+                    Run Tests
+                </button>
+            </form>
+        </div>
+
+        <div class="card info-card">
+            <h2 class="card-title">What is checked?</h2>
+            <div class="check-grid">
+                <div class="check-item">
+                    <span class="check-icon">&#9881;&#65039;</span>
+                    <div>
+                        <strong>Launch &amp; Run</strong>
+                        <p>Runs with <code>java Week07.java</code> — Java 25 single-file source launch.
+                           No separate compile step needed; the JVM handles it.
+                           Compile errors appear directly in the error output.</p>
+                    </div>
+                </div>
+                <div class="check-item">
+                    <span class="check-icon">&#128269;</span>
+                    <div>
+                        <strong>Source Code Analysis</strong>
+                        <p>Confirms <code>getMean(ArrayList&lt;Integer&gt;)</code> returns double/float
+                           and <code>getMedian(ArrayList&lt;Integer&gt;)</code> returns int,
+                           both are called from <code>main()</code>, ArrayList usage is present,
+                           and random generation uses the correct range.</p>
+                    </div>
+                </div>
+                <div class="check-item">
+                    <span class="check-icon">&#128203;</span>
+                    <div>
+                        <strong>Output Verification</strong>
+                        <p>Runs the program, verifies all printed numbers are in [0,100],
+                           then checks the reported mean and median against values
+                           calculated from the program's own printed list.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="site-footer">
+        Week 07 Assignment Tester &nbsp;&middot;&nbsp; Java 25 &nbsp;&middot;&nbsp; Spring Boot 4.0.2
+    </footer>
+
+</div>
+
+<script>
+    const dropZone  = document.getElementById('dropZone');
+    const fileInput = document.getElementById('file');
+    const fileLabel = document.getElementById('fileLabel');
+
+    // Update label when a file is chosen via click
+    fileInput.addEventListener('change', function () {
+        fileLabel.textContent = this.files.length > 0
+            ? this.files[0].name
+            : 'Click to choose or drag a .java file here';
+    });
+
+    // ── Drag-and-drop support ──────────────────────────────────────────
+    // Prevent browser default (open-the-file) on drag/drop events
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt =>
+        dropZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); })
+    );
+
+    // Visual feedback: highlight on drag enter/over, remove on leave/drop
+    ['dragenter', 'dragover'].forEach(evt =>
+        dropZone.addEventListener(evt, () => dropZone.classList.add('drag-active'))
+    );
+    ['dragleave', 'drop'].forEach(evt =>
+        dropZone.addEventListener(evt, () => dropZone.classList.remove('drag-active'))
+    );
+
+    // Handle the actual drop
+    dropZone.addEventListener('drop', function (e) {
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            // Transfer the dropped file into the hidden <input type="file">
+            fileInput.files = files;
+            fileLabel.textContent = files[0].name;
+        }
+    });
+</script>
+
+</body>
+</html>
