@@ -7,9 +7,10 @@ import org.springframework.stereotype.Service;
 /**
  * Orchestrates the full evaluation pipeline for one student submission:
  *
- *   1. Source analysis  — static regex checks on the source text
+ *   1. Source analysis  — AST-based checks on the source text
  *   2. Execution        — runs "java FileName.java" with piped stdin
  *   3. Output analysis  — parses stdout, verifies numbers, mean, and median
+ *   4. AI fallback      — reviews extracted methods when the output lacks values
  *
  * There is no separate compilation step. Java 25 single-file source launch
  * ("java Week07.java") handles compilation internally; any syntax errors surface

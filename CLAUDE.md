@@ -16,25 +16,44 @@ mvn spring-boot:run
 # App serves on http://localhost:8080
 ```
 
-Java 25 with `--enable-preview` is required. The pom.xml configures this for Maven compilation automatically.
+Java 25 with `--enable-preview` is required. The `pom.xml` configures this for Maven compilation automatically.
 
-## What This Project Does
+## Project Purpose
 
-An instructor-facing Spring Boot 4.0.2 web app that automatically grades student Java submissions for a Week 07 ArrayList assignment. An instructor uploads a student's `.java` file via the web UI, and the app runs a three-phase evaluation pipeline:
+Instructor-facing Spring Boot 4.0.2 web app that evaluates student Java submissions for the Week 07 ArrayList assignment (mean and median). It is an instructor aid for fast consistency checks, not a full auto-grader.
 
-1. **Source Analysis** (`SourceAnalysisService`) — Regex-based static analysis checks that `getMean(ArrayList<Integer>)` returning double/float and `getMedian(ArrayList<Integer>)` returning int exist with correct signatures, are called from `main()`, that `ArrayList<Integer>` is used, that random number generation is present with the correct range (`nextInt(101)` for [0,100] inclusive), and that `.add()` and `.sort()` are used.
+## Evaluation Pipeline
 
-2. **Execution** (`ExecutionService`) — Writes the source to a temp directory and runs it via `java FileName.java` (single-file source launch, no separate javac step). Pipes the user-specified input size as stdin. 15-second timeout. Cleans up temp files after.
+1. **Source Analysis** (`SourceAnalysisService`)
+   - Uses Java AST parsing (`javac` tree API) rather than raw regex matching.
+   - Verifies `getMean(ArrayList<Integer>)`, `getMedian(ArrayList<Integer>)`, `main()` invocation of both methods, `ArrayList<Integer>` usage, random generation usage/range, and `.add()` / `.sort()` usage.
+   - AST-driven checks avoid false positives from comments and string literals.
+   - No sanitized-text fallback is used; source checks depend on the Java 25 AST path.
 
-3. **Output Analysis** (`OutputAnalysisService`) — Parses stdout to collect printed integers, verifies count matches expected input size, checks all values are in [0,100], and confirms the reported mean and median values match the actual mean/median of the printed list.
+2. **Execution** (`ExecutionService`)
+   - Writes source to a temp directory and runs with single-file launch: `java FileName.java`.
+   - Drains stdout and stderr concurrently to prevent child-process blocking on full output pipes.
+   - Captures bounded output (`MAX_CAPTURE_BYTES`) and marks truncation when needed.
+   - Enforces 15-second timeout and returns captured partial output on timeout.
+   - Always cleans temporary files in `finally`.
 
-Results are aggregated in `TestResult` (containing `CheckResult` items with PASS/FAIL/WARN status) and rendered via Thymeleaf templates.
+3. **Output Analysis** (`OutputAnalysisService`)
+   - Parses output values via multiple strategies:
+     - explicit line values (pure integer lines and recognized labeled value lines)
+     - bracket lists like `[1, 2, 3]`
+   - Chooses the most plausible value set using confidence + expected-count scoring.
+   - Flags ambiguous parsing situations with a WARN check.
+   - Extracts mean/median from lines containing those keywords using the **last numeric token** on the line.
+   - Validates count, value range, mean correctness, and median correctness against parsed values.
 
-## Key Architecture Details
+4. **AI Fallback (optional)** (`AiAnalysisService`)
+   - If no printable values are found, extracted `getMean` / `getMedian` methods can be evaluated by Claude when `ANTHROPIC_API_KEY` is configured.
+   - If key is missing or API fails, AI checks return WARN (non-fatal).
 
-- **No database** — stateless; each upload is evaluated independently.
-- **No compilation step** — relies on Java 25 single-file source launch (`java File.java`).
-- **No external AI calls** — all analysis is regex/pattern-matching based. Student code never leaves the server.
-- `Week07.java` in the project root is a **sample student submission** for testing, not part of the app itself.
-- `CheckResult.Category` enum (`SOURCE_ANALYSIS`, `OUTPUT_CHECKS`) groups checks in the results UI.
-- The `EvaluationService` is the orchestrator that wires the three phases together.
+## Key Architecture Notes
+
+- Stateless app, no database.
+- Single-file source launch is used instead of a separate `javac` compilation phase.
+- `Week07.java` in the repository root is sample student code for local testing, not part of the Spring app runtime.
+- Results are aggregated in `TestResult` as `CheckResult` entries (`PASS`, `FAIL`, `WARN`) grouped by category in the UI.
+- `EvaluationService` orchestrates the full pipeline.
